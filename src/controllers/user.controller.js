@@ -1,19 +1,82 @@
-const registerUser = (req, res) => {
+import {User} from "../models/user.models.js";
+import bcrypt from "bcrypt";
+
+const registerUser = async (req, res) => {
     //obj destructre from req.body
+    const {username,fullname,email,address,phoneNumber,role,password} = req.body;
+
     //check for required fields
-    //email already exists?
+    if(!username || !email || !role || !phoneNumber ||!fullname ||!address ||!password){
+        throw console.error("All fields are required");
+        
+    }
+
+    //user already exists?
+    const existeduser = await User.findOne({
+        $or:[{username},{phoneNumber}]
+    });
+    if(existeduser){
+        throw error("This user already exists");
+    }
+
     //enccrypt password through bcryptjs 
+    const pass = bcrypt.hashSync(password,10);
+
+
     //save to db
+    const user = await User.create({
+        fullname,
+        email,
+        username:username.toLowerCase(),
+        address,
+        phoneNumber,
+        role,
+        password:pass
+    })
+
+    
+    const createdUser = await User.findById(user._id).select("-password");
+
+    if(!createdUser){
+        throw error(400).message("user registration failed!");
+    }
     //return user
-    console.log("jeljlhsdiuf");
     return res
         .status(200)
         .json({
-            message: "ella sari ide",
-            data: {
-                
-            }
+            message: "User Registration Successful",
+            createdUser
         })
 };
 
+const loginuser = async(req,res) =>{
+    try{
+    const {username,password} = req.body;
+
+    if (!username || !password) {
+    return res.status(400).json({ message: "Username and password are required" });
+    }
+    const user = await User.findOne({username});
+    if(!user){
+        throw error("Invalid username or password");
+    }
+    
+    console.log(user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if(!isPasswordValid){
+        throw error("Invalid username or password");
+    }
+    return res.status(200).json({ 
+        message: "Login successful",
+        user
+    });
+}catch(error){
+        return res.status(500).json({
+            message: "An error occurred during login",
+            error: error.message
+        });
+    }
+}
 export default registerUser;
+export {loginuser};

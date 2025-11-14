@@ -1,11 +1,9 @@
 import mongoose from "mongoose"
-import { use } from "react"
 
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
-        required: true,
-        unique: true
+        required: true
     },
     fullname: {
         type: String,
@@ -31,6 +29,7 @@ const userSchema = new mongoose.Schema({
     }
 
 }, { timestamps: true })
+
 
 
 export const User = mongoose.model("User", userSchema);
