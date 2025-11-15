@@ -10,8 +10,8 @@ const addBook = (verifyAccessToken,verifyRole,async(req,res)=>{
         throw Error("All fields are required!");
     }
 
-    const existingbook = Book.findOne(bookId);
-    if(existingbook){
+    const existingbook = Book.find(bookId);
+    if(!existingbook){
         throw Error("Book with same Id already exists!");
     }
 
@@ -31,11 +31,16 @@ const updateBook = (verifyAccessToken,verifyRole,async(req,res)=>{
     if(!bookId ){
         throw Error("BookId not provided!");
     }
-    const book = Book.findOne(bookId);
-    if(!book){
+    const existingbook = await Book.findOne({bookId});
+    if(!existingbook){
         throw Error("That book doesnot exists!");
     }
-    book.content +=updation;
+    existingbook.content +=updation;
+    await existingbook.save();
+    res.send({
+        status:200,
+        message:"Book Updated Successfully!"
+    })
 })
 
 const BookOp = (verifyAccessToken,async(req,res)=>{
@@ -46,7 +51,11 @@ const BookOp = (verifyAccessToken,async(req,res)=>{
     if(!isBook){
         throw Error("This Book is not present"); 
     }
+    res.status(200).json({
+        message:"all ok!"
+    })
 })
 
 export {BookOp};
 export {addBook};
+export {updateBook};
