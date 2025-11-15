@@ -20,7 +20,7 @@ const registerUser = async (req, res) => {
     }
 
     //enccrypt password through bcryptjs 
-    const pass = bcrypt.hashSync(password,10);
+    //Done in user.models.js pre save middleware
 
 
     //save to db
@@ -31,11 +31,11 @@ const registerUser = async (req, res) => {
         address,
         phoneNumber,
         role,
-        password:pass
+        password
     })
 
     
-    const createdUser = await User.findById(user._id).select("-password");
+    const createdUser = await User.findById(user._id).select("-password -refreshToken");
 
     if(!createdUser){
         throw error(400).message("user registration failed!");
@@ -45,7 +45,6 @@ const registerUser = async (req, res) => {
         .status(200)
         .json({
             message: "User Registration Successful",
-            createdUser
         })
 };
 
@@ -60,16 +59,21 @@ const loginuser = async(req,res) =>{
     if(!user){
         throw error("Invalid username or password");
     }
-    
-    console.log(user.password);
-    const isPasswordValid = await bcrypt.compare(password, user.password);
 
-    if(!isPasswordValid){
+
+    const validation = user.isPasswordCorrect(password);
+
+
+    if(!validation){
         throw error("Invalid username or password");
     }
+
+    const access = user.generateAccessToken();
+    const refresh = user.generateRefreshToken();
+    
     return res.status(200).json({ 
         message: "Login successful",
-        user
+        access,refresh
     });
 }catch(error){
         return res.status(500).json({
