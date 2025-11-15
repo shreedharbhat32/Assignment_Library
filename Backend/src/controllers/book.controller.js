@@ -66,16 +66,24 @@ const deleteBook = (async(req,res)=>{
 
 
 const BookOp = (async(req,res)=>{
-    
-    const {title,bookId} = req.body;
+    try {
+        const {title,bookId} = req.body;
 
-    const isBook = await Book.findOne({bookId});
-    if(!isBook){
-        throw Error("This Book is not present"); 
+        const isBook = await Book.findOne({bookId});
+        if(!isBook){
+            return res.status(404).json({
+                message: "This Book is not present"
+            });
+        }
+        return res.status(200).json({
+            message: isBook.content
+        });
+    } catch(error) {
+        return res.status(500).json({
+            message: "An error occurred while reading the book",
+            error: error.message
+        });
     }
-    res.status(200).json({
-        message: isBook.content
-    })
 })
 
 export {BookOp,deleteBook};

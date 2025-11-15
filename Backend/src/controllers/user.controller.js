@@ -75,12 +75,12 @@ const loginuser = async(req,res) =>{
         throw error("Invalid username or password");
     }
 
-    //const access = user.generateAccessToken();
-    // const refresh = user.generateRefreshToken();
+    const access = user.generateAccessToken();
+    const refresh = user.generateRefreshToken();
     
     return res.status(200).json({ 
         message: "Login successful",
-        // access
+        access,refresh
     });
 }catch(error){
         return res.status(500).json({
