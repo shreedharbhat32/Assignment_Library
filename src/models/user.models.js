@@ -5,7 +5,8 @@ import bcrypt from "bcrypt"
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
     fullname: {
         type: String,
@@ -32,8 +33,10 @@ const userSchema = new mongoose.Schema({
         required: true,
         lowercase: true,
         default: "reguler user"
+    },
+    refreshToken:{
+        type:String,
     }
-
 }, { timestamps: true })
 
 
@@ -78,5 +81,6 @@ userSchema.methods.generateRefreshToken = function(){
         {expiresIn:process.env.REFRESH_TOKEN_EXPIRY}
     )
 }
+
 
 export const User = mongoose.model("User", userSchema);
