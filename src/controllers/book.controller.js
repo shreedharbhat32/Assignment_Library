@@ -43,6 +43,24 @@ const updateBook = (verifyAccessToken,verifyRole,async(req,res)=>{
     })
 })
 
+const deleteBook = (verifyAccessToken,verifyRole,async(req,res)=>{
+    const {title,bookId} = req.body;
+    const isbook = await Book.findOne({bookId});
+    if(!isbook){
+        throw Error("This Book is not present or Id is wrong!");
+    }
+    const del = await Book.deleteOne({ bookId: isbook.bookId });
+    if(!del){
+        throw Error("Error happened in Book deletion!")
+    }
+    res.send({
+        status:200,
+        message:"Book deleted Successfully!"
+    })
+
+})
+
+
 const BookOp = (verifyAccessToken,async(req,res)=>{
     
     const {title,bookId} = req.body;
@@ -52,10 +70,10 @@ const BookOp = (verifyAccessToken,async(req,res)=>{
         throw Error("This Book is not present"); 
     }
     res.status(200).json({
-        message:"all ok!"
+        message: isBook.content
     })
 })
 
-export {BookOp};
+export {BookOp,deleteBook};
 export {addBook};
 export {updateBook};
