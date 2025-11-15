@@ -2,13 +2,13 @@ import {User} from "../models/user.models.js";
 import bcrypt from "bcrypt";
 
 const registerUser = async (req, res) => {
+    try{
     //obj destructre from req.body
     const {username,fullname,email,address,phoneNumber,role,password} = req.body;
 
     //check for required fields
     if(!username || !email || !role || !phoneNumber ||!fullname ||!address ||!password){
-        throw console.error("All fields are required");
-        
+        return res.status(401).message("All fields are required");
     }
 
     //user already exists?
@@ -16,7 +16,9 @@ const registerUser = async (req, res) => {
         $or:[{username},{phoneNumber}]
     });
     if(existeduser){
-        throw error("This user already exists");
+        return res.status(500).json({
+            message:"User already exists"
+        })
     }
 
     //enccrypt password through bcryptjs 
@@ -46,8 +48,13 @@ const registerUser = async (req, res) => {
         .json({
             message: "User Registration Successful",
         })
-};
-
+}catch(error){
+    return res.status(500).json({
+            message: "An error occurred during registration",
+            error: error.message
+        });
+}
+}
 const loginuser = async(req,res) =>{
     try{
     const {username,password} = req.body;
@@ -68,12 +75,12 @@ const loginuser = async(req,res) =>{
         throw error("Invalid username or password");
     }
 
-    const access = user.generateAccessToken();
-    const refresh = user.generateRefreshToken();
+    //const access = user.generateAccessToken();
+    // const refresh = user.generateRefreshToken();
     
     return res.status(200).json({ 
         message: "Login successful",
-        access,refresh
+        // access
     });
 }catch(error){
         return res.status(500).json({

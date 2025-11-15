@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         lowercase: true,
-        default: "reguler user"
+        default: "regular"
     },
     refreshToken:{
         type:String,

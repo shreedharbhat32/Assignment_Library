@@ -1,18 +1,22 @@
 import {Book} from "../models/book.models.js";
 import {User} from "../models/user.models.js";
-import { verifyAccessToken } from "../middlewares/verifyaccess.middlewares.js"; 
-import { verifyRole } from "../middlewares/verifyrole.middlewares.js";
 
 
-const addBook = (verifyAccessToken,verifyRole,async(req,res)=>{
+const addBook = (async(req,res)=>{
     const {title,bookId,section,author,content,edition} = req.body;
     if(!title || !bookId ||!section||!author||!content||!edition){
-        throw Error("All fields are required!");
+        res.send({
+            status:401,
+            message:"All fields are required!"
+        })
     }
 
-    const existingbook = Book.find(bookId);
-    if(!existingbook){
-        throw Error("Book with same Id already exists!");
+    const existingbook = await Book.findOne({bookId});
+    if(existingbook){
+        return res.send({
+            status:401,
+            message:"This Book already exists!",
+        })
     }
 
     const book = Book.create({
@@ -26,7 +30,7 @@ const addBook = (verifyAccessToken,verifyRole,async(req,res)=>{
     return res.status(201).json({message:"Book created succesfully!"},book);
 })
 
-const updateBook = (verifyAccessToken,verifyRole,async(req,res)=>{
+const updateBook = (async(req,res)=>{
     const {bookId,updation} = req.body;
     if(!bookId ){
         throw Error("BookId not provided!");
@@ -43,7 +47,7 @@ const updateBook = (verifyAccessToken,verifyRole,async(req,res)=>{
     })
 })
 
-const deleteBook = (verifyAccessToken,verifyRole,async(req,res)=>{
+const deleteBook = (async(req,res)=>{
     const {title,bookId} = req.body;
     const isbook = await Book.findOne({bookId});
     if(!isbook){
@@ -61,7 +65,7 @@ const deleteBook = (verifyAccessToken,verifyRole,async(req,res)=>{
 })
 
 
-const BookOp = (verifyAccessToken,async(req,res)=>{
+const BookOp = (async(req,res)=>{
     
     const {title,bookId} = req.body;
 
