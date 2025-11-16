@@ -3,17 +3,14 @@ import bcrypt from "bcrypt";
 
 const registerUser = async (req, res) => {
     try{
-    //obj destructre from req.body
     const {username,fullname,email,address,phoneNumber,password, role} = req.body;
 
-    //check for required fields (role removed - defaults to regular)
     if(!username || !email || !phoneNumber ||!fullname ||!address ||!password){
         return res.status(401).json({
             message: "All fields are required"
         });
     }
 
-    //user already exists?
     const existeduser = await User.findOne({
         $or:[{username: username.toLowerCase()},{phoneNumber}]
     });

@@ -85,13 +85,10 @@ const BookOp = (async(req,res)=>{
 
         console.log('BookOp - Searching for bookId:', bookId);
         
-        // Try exact match first (fastest)
         let isBook = await Book.findOne({ bookId: bookId });
         
-        // If not found, try case-insensitive search
         if (!isBook) {
             console.log('BookOp - Exact match not found, trying case-insensitive search');
-            // Escape special regex characters and use case-insensitive search
             const escapedBookId = bookId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             isBook = await Book.findOne({ 
                 bookId: { $regex: new RegExp(`^${escapedBookId}$`, 'i') } 
@@ -100,7 +97,6 @@ const BookOp = (async(req,res)=>{
         
         if(!isBook){
             console.log('BookOp - Book not found with bookId:', bookId);
-            // Debug: Check what bookIds exist in database
             const allBooks = await Book.find({}).select('bookId title');
             console.log('BookOp - Available bookIds in database:', allBooks.map(b => b.bookId));
             return res.status(404).json({
@@ -144,3 +140,4 @@ export {BookOp,deleteBook};
 export {addBook};
 export {updateBook};
 export {getAllBooks};
+
