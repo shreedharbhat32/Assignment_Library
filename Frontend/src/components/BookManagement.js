@@ -1,16 +1,14 @@
-import React, { useState } from 'react';
-import { addBook, updateBook, deleteBook, readBook, getAllUsers, updateUserRole } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { addBook, updateBook, deleteBook, readBook, getAllUsers, updateUserRole, getAllBooks } from '../services/api';
 
 const BookManagement = () => {
   const [activeTab, setActiveTab] = useState('read');
   const [messages, setMessages] = useState({ error: '', success: '' });
   const [loading, setLoading] = useState(false);
 
-  // Read book state
   const [readBookId, setReadBookId] = useState('');
   const [book, setBook] = useState(null);
 
-  // Add book state
   const [addFormData, setAddFormData] = useState({
     title: '',
     bookId: '',
@@ -20,28 +18,21 @@ const BookManagement = () => {
     edition: '',
   });
 
-  // Update book state
   const [updateFormData, setUpdateFormData] = useState({
     bookId: '',
     updation: '',
   });
 
-  // Delete book state
-  const [deleteFormData, setDeleteFormData] = useState({
-    title: '',
-    bookId: '',
-  });
-
-  // User management state
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [users, setUsers] = useState([]);
+  const [books, setBooks] = useState([]);
+  const [loadingBooks, setLoadingBooks] = useState(false);
 
   const clearMessages = () => {
     setMessages({ error: '', success: '' });
     setBook(null);
   };
 
-  // User management handlers
   const handleLoadUsers = async () => {
     setLoadingUsers(true);
     setMessages({ error: '', success: '' });
@@ -58,10 +49,8 @@ const BookManagement = () => {
   };
 
   const handleUpdateRole = async (userId, newRole) => {
-    // Prevent downgrading admin users to regular - frontend protection
     const user = users.find(u => u._id === userId);
     if (user && user.role === 'admin') {
-      // Admins cannot be downgraded to regular or have their role changed
       setMessages({ error: 'Admin users cannot be downgraded to regular users or have their role changed', success: '' });
       return;
     }
@@ -75,7 +64,6 @@ const BookManagement = () => {
     try {
       await updateUserRole(userId, newRole);
       setMessages({ error: '', success: 'User role updated successfully!' });
-      // Reload users to reflect changes
       await handleLoadUsers();
     } catch (err) {
       setMessages({ error: err.message || 'Failed to update user role', success: '' });
@@ -84,7 +72,6 @@ const BookManagement = () => {
     }
   };
 
-  // Read book handler
   const handleReadBook = async (e) => {
     e.preventDefault();
     if (!readBookId.trim()) {
@@ -100,12 +87,10 @@ const BookManagement = () => {
       const response = await readBook(readBookId.trim());
       console.log('BookManagement - Response:', response);
       
-      // Backend returns { isBook: { title, author, section, edition, content, bookId, ... } }
       if (response && response.isBook) {
         setBook(response.isBook);
         setMessages({ error: '', success: 'Book found successfully!' });
       } else if (response && (response.title || response.bookId)) {
-        // Fallback: if response is the book object directly
         setBook(response);
         setMessages({ error: '', success: 'Book found successfully!' });
       } else {
@@ -121,7 +106,6 @@ const BookManagement = () => {
     }
   };
 
-  // Add book handler
   const handleAddBook = async (e) => {
     e.preventDefault();
     clearMessages();
@@ -170,15 +154,29 @@ const BookManagement = () => {
     }
   };
 
-  // Delete book handler
-  const handleDeleteBook = async (e) => {
-    e.preventDefault();
-    if (!deleteFormData.bookId.trim()) {
-      setMessages({ error: 'Please enter a book ID', success: '' });
-      return;
+  const fetchBooks = async () => {
+    setLoadingBooks(true);
+    try {
+      const response = await getAllBooks();
+      if (response && response.books) {
+        setBooks(response.books);
+      }
+    } catch (err) {
+      console.error('Error fetching books:', err);
+      setMessages({ error: err.message || 'Failed to load books', success: '' });
+    } finally {
+      setLoadingBooks(false);
     }
+  };
 
-    if (!window.confirm('Are you sure you want to delete this book?')) {
+  useEffect(() => {
+    if (activeTab === 'delete') {
+      fetchBooks();
+    }
+  }, [activeTab]);
+
+  const handleDeleteBook = async (bookItem) => {
+    if (!window.confirm(`Are you sure you want to delete "${bookItem.title}" (ID: ${bookItem.bookId})?`)) {
       return;
     }
 
@@ -186,9 +184,10 @@ const BookManagement = () => {
     setLoading(true);
 
     try {
-      await deleteBook(deleteFormData.title, deleteFormData.bookId.trim());
+      await deleteBook(bookItem.title, bookItem.bookId);
       setMessages({ error: '', success: 'Book deleted successfully!' });
-      setDeleteFormData({ title: '', bookId: '' });
+      // Refresh the books list
+      await fetchBooks();
     } catch (err) {
       setMessages({ error: err.message || 'Failed to delete book', success: '' });
     } finally {
@@ -220,7 +219,7 @@ const BookManagement = () => {
           Update Book
         </button>
         <button
-          onClick={() => { setActiveTab('delete'); clearMessages(); }}
+          onClick={() => { setActiveTab('delete'); clearMessages(); fetchBooks(); }}
           style={activeTab === 'delete' ? activeTabStyle : tabStyle}
         >
           Delete Book
@@ -236,7 +235,6 @@ const BookManagement = () => {
       {messages.error && <div style={errorStyle}>{messages.error}</div>}
       {messages.success && <div style={successStyle}>{messages.success}</div>}
 
-      {/* Read Book Tab */}
       {activeTab === 'read' && (
         <div style={tabContentStyle}>
           <form onSubmit={handleReadBook} style={formStyle}>
@@ -290,7 +288,6 @@ const BookManagement = () => {
         </div>
       )}
 
-      {/* Add Book Tab */}
       {activeTab === 'add' && (
         <div style={tabContentStyle}>
           <form onSubmit={handleAddBook} style={formStyle}>
@@ -361,7 +358,6 @@ const BookManagement = () => {
         </div>
       )}
 
-      {/* Update Book Tab */}
       {activeTab === 'update' && (
         <div style={tabContentStyle}>
           <form onSubmit={handleUpdateBook} style={formStyle}>
@@ -393,38 +389,58 @@ const BookManagement = () => {
         </div>
       )}
 
-      {/* Delete Book Tab */}
       {activeTab === 'delete' && (
         <div style={tabContentStyle}>
-          <form onSubmit={handleDeleteBook} style={formStyle}>
-            <div style={inputGroupStyle}>
-              <label style={labelStyle}>Title:</label>
-              <input
-                type="text"
-                value={deleteFormData.title}
-                onChange={(e) => setDeleteFormData({ ...deleteFormData, title: e.target.value })}
-                required
-                style={inputStyle}
-              />
-            </div>
-            <div style={inputGroupStyle}>
-              <label style={labelStyle}>Book ID:</label>
-              <input
-                type="text"
-                value={deleteFormData.bookId}
-                onChange={(e) => setDeleteFormData({ ...deleteFormData, bookId: e.target.value })}
-                required
-                style={inputStyle}
-              />
-            </div>
-            <button type="submit" disabled={loading} style={deleteButtonStyle}>
-              {loading ? 'Deleting...' : 'Delete Book'}
-            </button>
-          </form>
+          <div style={booksListSectionStyle}>
+            <h3 style={sectionTitleStyle}>All Books</h3>
+            {loadingBooks ? (
+              <div style={loadingStyle}>Loading books...</div>
+            ) : books.length > 0 ? (
+              <div style={booksListStyle}>
+                {books.map((bookItem) => (
+                  <div
+                    key={bookItem._id || bookItem.bookId}
+                    style={bookListItemCardStyle}
+                  >
+                    <div style={bookListItemHeaderStyle}>
+                      <h4 style={bookListItemTitleStyle}>{bookItem.title}</h4>
+                      <span style={bookIdBadgeStyle}>ID: {bookItem.bookId}</span>
+                    </div>
+                    <div style={bookListItemMetaStyle}>
+                      <div style={bookListItemMetaRowStyle}>
+                        <span style={bookListItemMetaLabelStyle}>Author:</span>
+                        <span style={bookListItemMetaValueStyle}>{bookItem.author}</span>
+                      </div>
+                      <div style={bookListItemMetaRowStyle}>
+                        <span style={bookListItemMetaLabelStyle}>Section:</span>
+                        <span style={bookListItemMetaValueStyle}>{bookItem.section || 'General'}</span>
+                      </div>
+                      {bookItem.edition && (
+                        <div style={bookListItemMetaRowStyle}>
+                          <span style={bookListItemMetaLabelStyle}>Edition:</span>
+                          <span style={bookListItemMetaValueStyle}>{bookItem.edition}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div style={bookDeleteButtonContainerStyle}>
+                      <button
+                        onClick={() => handleDeleteBook(bookItem)}
+                        disabled={loading}
+                        style={deleteButtonStyle}
+                      >
+                        {loading ? 'Deleting...' : 'Delete Book'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={emptyStateStyle}>No books available.</div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* User Management Tab */}
       {activeTab === 'users' && (
         <div style={tabContentStyle}>
           <div style={userManagementHeaderStyle}>
@@ -824,6 +840,90 @@ const noActionStyle = {
   color: '#6c757d',
   fontSize: '0.875rem',
   fontStyle: 'italic',
+};
+
+// Book List Styles (for delete tab)
+const booksListSectionStyle = {
+  marginBottom: '2rem',
+};
+
+const booksListStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+  marginBottom: '1rem',
+};
+
+const bookListItemCardStyle = {
+  backgroundColor: '#ffffff',
+  borderRadius: '8px',
+  border: '1px solid #e0e0e0',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+  padding: '1.5rem',
+  transition: 'all 0.2s ease',
+  minHeight: '140px',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+};
+
+const bookListItemHeaderStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'flex-start',
+  marginBottom: '1rem',
+  gap: '1rem',
+};
+
+const bookListItemTitleStyle = {
+  margin: 0,
+  fontSize: '1.3rem',
+  fontWeight: '600',
+  color: '#333',
+  flex: 1,
+};
+
+const bookIdBadgeStyle = {
+  fontSize: '0.85rem',
+  padding: '0.4rem 0.75rem',
+  backgroundColor: '#e9ecef',
+  borderRadius: '4px',
+  color: '#666',
+  fontWeight: '500',
+  whiteSpace: 'nowrap',
+};
+
+const bookListItemMetaStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.75rem',
+  marginBottom: '1rem',
+};
+
+const bookListItemMetaRowStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  fontSize: '1rem',
+  gap: '0.5rem',
+};
+
+const bookListItemMetaLabelStyle = {
+  color: '#666',
+  fontWeight: '600',
+  minWidth: '80px',
+};
+
+const bookListItemMetaValueStyle = {
+  color: '#333',
+  fontWeight: '400',
+};
+
+const bookDeleteButtonContainerStyle = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  marginTop: '1rem',
+  paddingTop: '1rem',
+  borderTop: '1px solid #e0e0e0',
 };
 
 export default BookManagement;

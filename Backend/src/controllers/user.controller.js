@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 const registerUser = async (req, res) => {
     try{
     //obj destructre from req.body
-    const {username,fullname,email,address,phoneNumber,password} = req.body;
+    const {username,fullname,email,address,phoneNumber,password, role} = req.body;
 
     //check for required fields (role removed - defaults to regular)
     if(!username || !email || !phoneNumber ||!fullname ||!address ||!password){
@@ -23,17 +23,13 @@ const registerUser = async (req, res) => {
         })
     }
 
-    //enccrypt password through bcryptjs 
-    //Done in user.models.js pre save middleware
-
-    //save to db - role defaults to "regular" in schema
     const user = await User.create({
         fullname,
         email,
         username:username.toLowerCase(),
         address,
         phoneNumber,
-        role: "regular", // Always set to regular for new registrations
+        role: role || "regular", 
         password
     })
 
@@ -72,7 +68,6 @@ const loginuser = async(req,res) =>{
         });
     }
 
-    // await the async password comparison
     const validation = await user.isPasswordCorrect(password);
 
     if(!validation){
@@ -97,7 +92,6 @@ const loginuser = async(req,res) =>{
 }
 const getAllUsers = async(req,res)=>{
     try {
-        // Get all users but exclude sensitive data
         const users = await User.find({}).select('-password -refreshToken').sort({ createdAt: -1 });
         
         return res.status(200).json({
@@ -122,7 +116,6 @@ const updateUserRole = async(req,res)=>{
             });
         }
 
-        // Validate role
         if (role !== 'admin' && role !== 'regular') {
             return res.status(400).json({
                 message: "Role must be either 'admin' or 'regular'"

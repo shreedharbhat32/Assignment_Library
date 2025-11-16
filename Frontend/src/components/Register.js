@@ -5,13 +5,13 @@ import { isAuthenticated } from '../utils/auth';
 
 const Register = () => {
   const navigate = useNavigate();
-  
-  // Redirect if already logged in
+
   useEffect(() => {
     if (isAuthenticated()) {
       navigate('/dashboard', { replace: true });
     }
   }, [navigate]);
+
   const [formData, setFormData] = useState({
     username: '',
     fullname: '',
@@ -19,7 +19,14 @@ const Register = () => {
     address: '',
     phoneNumber: '',
     password: '',
+    confirmPassword: '',
   });
+
+  const [errors, setErrors] = useState({
+    password: '',
+    confirmPassword: '',
+  });
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,18 +36,50 @@ const Register = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+
+    // Reset related errors
+    setErrors({
+      password: '',
+      confirmPassword: '',
+    });
+
     setError('');
     setSuccess('');
+  };
+
+  const validatePasswords = () => {
+    const newErrors = {};
+
+    if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters.";
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match.";
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    if (!validatePasswords()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await registerUser(formData);
+      const sendData = { ...formData };
+      delete sendData.confirmPassword;
+
+      await registerUser(sendData);
+
       setSuccess('Registration successful! Redirecting to login...');
       setTimeout(() => {
         navigate('/login');
@@ -56,9 +95,13 @@ const Register = () => {
     <div style={containerStyle}>
       <div style={formContainerStyle}>
         <h2 style={titleStyle}>Register</h2>
+
         {error && <div style={errorStyle}>{error}</div>}
         {success && <div style={successStyle}>{success}</div>}
+
         <form onSubmit={handleSubmit} style={formStyle}>
+
+          {/* Username */}
           <div style={inputGroupStyle}>
             <label style={labelStyle}>Username:</label>
             <input
@@ -70,6 +113,8 @@ const Register = () => {
               style={inputStyle}
             />
           </div>
+
+          {/* Full Name */}
           <div style={inputGroupStyle}>
             <label style={labelStyle}>Full Name:</label>
             <input
@@ -81,6 +126,8 @@ const Register = () => {
               style={inputStyle}
             />
           </div>
+
+          {/* Email */}
           <div style={inputGroupStyle}>
             <label style={labelStyle}>Email:</label>
             <input
@@ -92,6 +139,8 @@ const Register = () => {
               style={inputStyle}
             />
           </div>
+
+          {/* Address */}
           <div style={inputGroupStyle}>
             <label style={labelStyle}>Address:</label>
             <input
@@ -103,6 +152,8 @@ const Register = () => {
               style={inputStyle}
             />
           </div>
+
+          {/* Phone Number */}
           <div style={inputGroupStyle}>
             <label style={labelStyle}>Phone Number:</label>
             <input
@@ -114,6 +165,8 @@ const Register = () => {
               style={inputStyle}
             />
           </div>
+
+          {/* Password */}
           <div style={inputGroupStyle}>
             <label style={labelStyle}>Password:</label>
             <input
@@ -124,11 +177,32 @@ const Register = () => {
               required
               style={inputStyle}
             />
+            {errors.password && (
+              <p style={fieldErrorStyle}>{errors.password}</p>
+            )}
           </div>
+
+          {/* Confirm Password */}
+          <div style={inputGroupStyle}>
+            <label style={labelStyle}>Retype Password:</label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+              style={inputStyle}
+            />
+            {errors.confirmPassword && (
+              <p style={fieldErrorStyle}>{errors.confirmPassword}</p>
+            )}
+          </div>
+
           <button type="submit" disabled={loading} style={buttonStyle}>
             {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
+
         <p style={linkStyle}>
           Already have an account?{' '}
           <a href="/login" style={linkAnchorStyle}>
@@ -140,6 +214,7 @@ const Register = () => {
   );
 };
 
+// Styles
 const containerStyle = {
   display: 'flex',
   justifyContent: 'center',
@@ -188,6 +263,12 @@ const inputStyle = {
   boxSizing: 'border-box',
 };
 
+const fieldErrorStyle = {
+  color: 'red',
+  marginTop: '0.4rem',
+  fontSize: '0.9rem',
+};
+
 const buttonStyle = {
   padding: '0.75rem',
   backgroundColor: '#28a745',
@@ -226,4 +307,3 @@ const linkAnchorStyle = {
 };
 
 export default Register;
-

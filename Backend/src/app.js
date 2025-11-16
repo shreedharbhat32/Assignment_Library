@@ -3,13 +3,10 @@ import router from "./routes/user.routes.js";
 
 const app = express();
 
-// Custom middleware to parse JSON bodies for GET requests
-app.use((req, res, next) => {
-    // Check for content-type (case-insensitive)
+app.use((req, _, next) => {
     const contentType = req.headers['content-type'] || req.headers['Content-Type'] || '';
     
     if (req.method === 'GET' && contentType.toLowerCase().includes('application/json')) {
-        // Only parse if body doesn't already exist
         if (!req.body) {
             let data = '';
             
@@ -20,7 +17,6 @@ app.use((req, res, next) => {
             
             req.on('end', () => {
                 try {
-                    console.log('GET request - All data received, total length:', data.length);
                     if (data && data.trim()) {
                         req.body = JSON.parse(data);
                         console.log('GET request body parsed successfully:', req.body);

@@ -9,7 +9,6 @@ const BookReader = () => {
   const [loading, setLoading] = useState(false);
   const [loadingBooks, setLoadingBooks] = useState(false);
 
-  // Fetch all books on component mount
   useEffect(() => {
     fetchBooks();
   }, []);
@@ -23,7 +22,6 @@ const BookReader = () => {
       }
     } catch (err) {
       console.error('Error fetching books:', err);
-      // Don't show error to user, just log it
     } finally {
       setLoadingBooks(false);
     }
@@ -39,11 +37,9 @@ const BookReader = () => {
       const response = await readBook(selectedBookId);
       console.log('BookReader - Response:', response);
       
-      // Backend returns { isBook: { title, author, section, edition, content, bookId, ... } }
       if (response && response.isBook) {
         setBook(response.isBook);
       } else if (response && (response.title || response.bookId)) {
-        // Fallback: if response is the book object directly
         setBook(response);
       } else {
         console.error('BookReader - Invalid response format:', response);
@@ -71,7 +67,6 @@ const BookReader = () => {
     <div style={containerStyle}>
       <h2 style={titleStyle}>Read Book</h2>
       
-      {/* Books List Section */}
       <div style={booksListSectionStyle}>
         <h3 style={sectionTitleStyle}>Available Books</h3>
         {loadingBooks ? (
@@ -116,7 +111,6 @@ const BookReader = () => {
         )}
       </div>
 
-      {/* Search Section */}
       <div style={searchSectionStyle}>
         <h3 style={sectionTitleStyle}>Search by Book ID</h3>
         <form onSubmit={handleSearch} style={formStyle}>
@@ -140,7 +134,6 @@ const BookReader = () => {
 
       {error && <div style={errorStyle}>{error}</div>}
 
-      {/* Selected Book Display */}
       {book && (
         <div style={bookCardStyle}>
           <div style={bookHeaderStyle}>

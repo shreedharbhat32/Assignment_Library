@@ -6,7 +6,6 @@ import { setUserInfo, isAuthenticated } from '../utils/auth';
 const Login = () => {
   const navigate = useNavigate();
   
-  // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated()) {
       navigate('/dashboard', { replace: true });
@@ -35,12 +34,10 @@ const Login = () => {
     try {
       const response = await loginUser(formData.username, formData.password);
       
-      // Backend returns { message, access, refresh }
       const accessToken = response.access || response.accessToken;
       const refreshToken = response.refresh || response.refreshToken;
       
       if (accessToken) {
-        // Store both access and refresh tokens
         setUserInfo(accessToken, refreshToken);
         navigate('/dashboard');
       } else {

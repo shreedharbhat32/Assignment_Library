@@ -24,61 +24,61 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    password:{
+    password: {
         type: String,
         required: true
     },
     role: {
         type: String,
-        required: true,
         lowercase: true,
-        default: "regular"
+        default: "regular",
+        enum: ["regular", "admin"]
     },
-    refreshToken:{
-        type:String,
+    refreshToken: {
+        type: String,
     }
 }, { timestamps: true })
 
 
-userSchema.pre("save",async function(next){
-    if(!this.isModified("password"))return next();
-    this.password =  await bcrypt.hash(this.password,10);
+userSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) return next();
+    this.password = await bcrypt.hash(this.password, 10);
     next()
 })
 
-userSchema.methods.isPasswordCorrect = async function(password){
-    return await bcrypt.compare(password,this.password);
+userSchema.methods.isPasswordCorrect = async function (password) {
+    return await bcrypt.compare(password, this.password);
 }
 
-userSchema.methods.generateAccessToken = function(){
+userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
-            id:this._id,
-            username:this.username,
-            role:this.role,
-            fullname:this.fullname,
-            email:this.email,
-            address:this.address,
-            phoneNumber:this.phoneNumber
+            id: this._id,
+            username: this.username,
+            role: this.role,
+            fullname: this.fullname,
+            email: this.email,
+            address: this.address,
+            phoneNumber: this.phoneNumber
         }
-        ,process.env.ACCESS_SECRET_KEY,
-        {expiresIn:process.env.ACCESS_TOKEN_EXPIRY}
+        , process.env.ACCESS_SECRET_KEY,
+        { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
     )
 }
 
-userSchema.methods.generateRefreshToken = function(){
+userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         {
-            id:this._id,
-            username:this.username,
-            role:this.role,
-            fullname:this.fullname,
-            email:this.email,
-            address:this.address,
-            phoneNumber:this.phoneNumber
+            id: this._id,
+            username: this.username,
+            role: this.role,
+            fullname: this.fullname,
+            email: this.email,
+            address: this.address,
+            phoneNumber: this.phoneNumber
         }
-        ,process.env.REFRESH_SECRET_KEY,
-        {expiresIn:process.env.REFRESH_TOKEN_EXPIRY}
+        , process.env.REFRESH_SECRET_KEY,
+        { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
     )
 }
 

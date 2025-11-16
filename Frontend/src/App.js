@@ -7,7 +7,6 @@ import Register from './components/Register';
 import BookReader from './components/BookReader';
 import BookManagement from './components/BookManagement';
 
-// Protected Route component
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />;
@@ -20,7 +19,6 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
   return children;
 };
 
-// Dashboard component that shows different views based on role
 const Dashboard = () => {
   const admin = isAdmin();
   
