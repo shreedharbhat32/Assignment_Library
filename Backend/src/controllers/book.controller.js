@@ -67,18 +67,41 @@ const deleteBook = (async(req,res)=>{
 
 const BookOp = (async(req,res)=>{
     try {
-        const {title,bookId} = req.body;
+        // Accept bookId from query params (preferred) or body (for backward compatibility)
+        let bookId = req.query.bookId || (req.body && req.body.bookId);
+        
+        // Validate bookId
+        if (!bookId) {
+            return res.status(400).json({
+                message: "Book ID is required. Provide it as a query parameter: ?bookId=YOUR_BOOK_ID"
+            });
+        }
 
-        const isBook = await Book.findOne({bookId});
+        // Normalize bookId
+        bookId = String(bookId).trim();
+        
+        if (!bookId) {
+            return res.status(400).json({
+                message: "Book ID cannot be empty"
+            });
+        }
+
+        const isBook = await Book.findOne({ bookId: bookId });
+        
         if(!isBook){
             return res.status(404).json({
                 message: "This Book is not present"
             });
         }
+        
+        // Convert Mongoose document to plain object
+        const bookData = isBook.toObject();
+        
         return res.status(200).json({
-            message: isBook.content
+            isBook: bookData
         });
     } catch(error) {
+        console.error('BookOp - Error:', error);
         return res.status(500).json({
             message: "An error occurred while reading the book",
             error: error.message

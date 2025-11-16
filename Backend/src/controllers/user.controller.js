@@ -40,7 +40,9 @@ const registerUser = async (req, res) => {
     const createdUser = await User.findById(user._id).select("-password -refreshToken");
 
     if(!createdUser){
-        throw error(400).message("user registration failed!");
+        return res.status(400).json({
+            message: "User registration failed!"
+        });
     }
     //return user
     return res
@@ -64,15 +66,18 @@ const loginuser = async(req,res) =>{
     }
     const user = await User.findOne({username});
     if(!user){
-        throw error("Invalid username or password");
+        return res.status(401).json({
+            message: "Invalid username or password"
+        });
     }
 
-
-    const validation = user.isPasswordCorrect(password);
-
+    // await the async password comparison
+    const validation = await user.isPasswordCorrect(password);
 
     if(!validation){
-        throw error("Invalid username or password");
+        return res.status(401).json({
+            message: "Invalid username or password"
+        });
     }
 
     const access = user.generateAccessToken();

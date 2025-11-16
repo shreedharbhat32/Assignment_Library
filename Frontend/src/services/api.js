@@ -109,88 +109,66 @@ export const loginUser = async (username, password) => {
 
 // Book APIs
 export const readBook = async (bookId, title = '') => {
-  // Backend expects GET with body containing both title and bookId
-  // Using XMLHttpRequest as a workaround since Fetch API doesn't allow body with GET
-  return new Promise((resolve, reject) => {
-    const token = getToken();
+  // Use query parameters instead of body for GET requests (standard RESTful approach)
+  const bookIdStr = String(bookId || '').trim();
+  
+  if (!bookIdStr) {
+    throw new Error('Book ID is required');
+  }
+  
+  // Encode bookId for URL
+  const encodedBookId = encodeURIComponent(bookIdStr);
+  
+  // Build URL with query parameter
+  const url = `${API_BASE_URL}/library-main/read-book?bookId=${encodedBookId}`;
+  
+  const token = getToken();
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = token;
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: headers,
+    });
     
-    // Ensure bookId is a string and trim whitespace
-    const bookIdStr = String(bookId || '').trim();
-    const titleStr = title ? String(title).trim() : bookIdStr;
-    
-    if (!bookIdStr) {
-      reject(new Error('Book ID is required'));
-      return;
-    }
-    
-    // Prepare request body
-    const requestBody = {
-      title: titleStr,
-      bookId: bookIdStr
-    };
-    
-    const bodyString = JSON.stringify(requestBody);
-    
-    // Debug: Log what we're sending (remove in production)
-    console.log('Sending readBook request:', { bookId: bookIdStr, body: requestBody });
-    
-    const xhr = new XMLHttpRequest();
-    
-    // Set up the request BEFORE setting headers
-    xhr.open('GET', `${API_BASE_URL}/library-main/read-book`, true);
-    
-    // IMPORTANT: Set Content-Type header BEFORE opening the connection
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    
-    if (token) {
-      xhr.setRequestHeader('Authorization', token);
-    }
-    
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4) {
-        try {
-          // Debug: Log response
-          console.log('Response status:', xhr.status);
-          console.log('Response text:', xhr.responseText);
-          
-          const contentType = xhr.getResponseHeader('content-type');
-          let data;
-          
-          if (contentType && contentType.includes('application/json')) {
-            data = JSON.parse(xhr.responseText);
-          } else {
-            try {
-              data = JSON.parse(xhr.responseText);
-            } catch {
-              data = { message: xhr.responseText || 'An error occurred' };
-            }
-          }
-          
-          if (xhr.status === 401 || xhr.status === 403) {
-            removeToken();
-            window.location.href = '/login';
-            reject(new Error(data.message || 'Unauthorized access'));
-            return;
-          }
-          
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(data);
-          } else {
-            reject(new Error(data.message || data.error || 'An error occurred'));
-          }
-        } catch (error) {
-          reject(error);
-        }
+    // Handle non-JSON responses
+    let data;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { message: text || 'An error occurred' };
       }
-    };
-    
-    xhr.onerror = function() {
-      reject(new Error('Cannot connect to server. Please ensure the backend is running on http://localhost:5000 and CORS is enabled.'));
-    };
-    
-    // Send the body - XMLHttpRequest should handle GET with body
-    xhr.send(bodyString);
-  });
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      removeToken();
+      window.location.href = '/login';
+      throw new Error(data.message || 'Unauthorized access');
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || data.error || 'An error occurred');
+    }
+
+    return data;
+  } catch (error) {
+    // Handle network errors (CORS, connection issues, etc.)
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      throw new Error('Cannot connect to server. Please ensure the backend is running on http://localhost:5000 and CORS is enabled.');
+    }
+    throw error;
+  }
 };
 
 export const addBook = async (bookData) => {

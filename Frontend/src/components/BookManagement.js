@@ -8,7 +8,7 @@ const BookManagement = () => {
 
   // Read book state
   const [readBookId, setReadBookId] = useState('');
-  const [bookContent, setBookContent] = useState('');
+  const [book, setBook] = useState(null);
 
   // Add book state
   const [addFormData, setAddFormData] = useState({
@@ -34,6 +34,7 @@ const BookManagement = () => {
 
   const clearMessages = () => {
     setMessages({ error: '', success: '' });
+    setBook(null);
   };
 
   // Read book handler
@@ -45,16 +46,29 @@ const BookManagement = () => {
     }
 
     clearMessages();
-    setBookContent('');
+    setBook(null);
     setLoading(true);
 
     try {
       const response = await readBook(readBookId.trim());
-      setBookContent(response.message || response.content || 'No content available');
-      setMessages({ error: '', success: 'Book found successfully!' });
+      console.log('BookManagement - Response:', response);
+      
+      // Backend returns { isBook: { title, author, section, edition, content, bookId, ... } }
+      if (response && response.isBook) {
+        setBook(response.isBook);
+        setMessages({ error: '', success: 'Book found successfully!' });
+      } else if (response && (response.title || response.bookId)) {
+        // Fallback: if response is the book object directly
+        setBook(response);
+        setMessages({ error: '', success: 'Book found successfully!' });
+      } else {
+        console.error('BookManagement - Invalid response format:', response);
+        setMessages({ error: 'Invalid response format: ' + JSON.stringify(response), success: '' });
+        setBook(null);
+      }
     } catch (err) {
       setMessages({ error: err.message || 'Book not found', success: '' });
-      setBookContent('');
+      setBook(null);
     } finally {
       setLoading(false);
     }
@@ -189,10 +203,35 @@ const BookManagement = () => {
               </div>
             </div>
           </form>
-          {bookContent && (
-            <div style={contentContainerStyle}>
-              <h3 style={contentTitleStyle}>Book Content:</h3>
-              <div style={contentStyle}>{bookContent}</div>
+          {book && (
+            <div style={bookCardStyle}>
+              <div style={bookHeaderStyle}>
+                <h3 style={bookTitleStyle}>{book.title}</h3>
+                <div style={bookMetaStyle}>
+                  <div style={metaRowStyle}>
+                    <span style={metaLabelStyle}>Book ID:</span>
+                    <span style={metaValueStyle}>{book.bookId}</span>
+                  </div>
+                  <div style={metaRowStyle}>
+                    <span style={metaLabelStyle}>Author:</span>
+                    <span style={metaValueStyle}>{book.author}</span>
+                  </div>
+                  <div style={metaRowStyle}>
+                    <span style={metaLabelStyle}>Section:</span>
+                    <span style={metaValueStyle}>{book.section || 'General'}</span>
+                  </div>
+                  {book.edition && (
+                    <div style={metaRowStyle}>
+                      <span style={metaLabelStyle}>Edition:</span>
+                      <span style={metaValueStyle}>{book.edition}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div style={contentSectionStyle}>
+                <h4 style={contentTitleStyle}>Content:</h4>
+                <div style={contentStyle}>{book.content || 'No content available'}</div>
+              </div>
             </div>
           )}
         </div>
@@ -440,22 +479,78 @@ const successStyle = {
   marginBottom: '1rem',
 };
 
-const contentContainerStyle = {
+const bookCardStyle = {
   marginTop: '2rem',
+  backgroundColor: '#ffffff',
+  borderRadius: '8px',
+  border: '1px solid #e0e0e0',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+  overflow: 'hidden',
+};
+
+const bookHeaderStyle = {
   padding: '1.5rem',
-  backgroundColor: '#f9f9f9',
-  borderRadius: '4px',
-  border: '1px solid #ddd',
+  backgroundColor: '#f8f9fa',
+  borderBottom: '2px solid #e0e0e0',
+};
+
+const bookTitleStyle = {
+  margin: '0 0 1rem 0',
+  fontSize: '1.5rem',
+  fontWeight: '600',
+  color: '#333',
+};
+
+const bookMetaStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+  gap: '1rem',
+};
+
+const metaRowStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.25rem',
+};
+
+const metaLabelStyle = {
+  fontSize: '0.875rem',
+  fontWeight: '600',
+  color: '#666',
+  textTransform: 'uppercase',
+  letterSpacing: '0.5px',
+};
+
+const metaValueStyle = {
+  fontSize: '1rem',
+  color: '#333',
+  fontWeight: '500',
+};
+
+const contentSectionStyle = {
+  padding: '1.5rem',
 };
 
 const contentTitleStyle = {
-  marginTop: 0,
-  marginBottom: '1rem',
+  margin: '0 0 1rem 0',
+  fontSize: '1.1rem',
+  fontWeight: '600',
+  color: '#333',
+  paddingBottom: '0.75rem',
+  borderBottom: '1px solid #e0e0e0',
 };
 
 const contentStyle = {
-  lineHeight: '1.6',
+  lineHeight: '1.8',
   whiteSpace: 'pre-wrap',
+  color: '#444',
+  fontSize: '1rem',
+  maxHeight: '500px',
+  overflowY: 'auto',
+  padding: '1rem',
+  backgroundColor: '#fafafa',
+  borderRadius: '4px',
+  border: '1px solid #e0e0e0',
 };
 
 export default BookManagement;
