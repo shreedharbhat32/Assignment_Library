@@ -4,9 +4,8 @@ import router from "./routes/user.routes.js";
 
 const app = express();
 
-// CORS configuration - allow requests from any origin (for deployment)
 app.use(cors({
-    origin: '*', // Allow all origins - for production, you can specify your frontend URL
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
