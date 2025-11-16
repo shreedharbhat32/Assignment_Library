@@ -54,7 +54,7 @@ This report documents the complete implementation of a **Role-Based Access Contr
 ┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
 │   Frontend      │         │    Backend      │         │    Database     │
 │   (React)       │◄───────►│   (Express)     │◄───────►│   (MongoDB)     │
-│                 │  HTTP   │                 │  Mongoose│                 │
+│                 │  HTTP   │                 │ Mongoose│                 │
 │  - BookReader   │         │  - Routes       │         │  - Users        │
 │  - BookMgmt     │         │  - Controllers  │         │  - Books        │
 │  - Auth Utils   │         │  - Middleware   │         │                 │
