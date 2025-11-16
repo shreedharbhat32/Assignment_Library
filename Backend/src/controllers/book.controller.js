@@ -109,6 +109,24 @@ const BookOp = (async(req,res)=>{
     }
 })
 
+const getAllBooks = (async(req,res)=>{
+    try {
+        // Get all books but exclude content to save bandwidth
+        const books = await Book.find({}).select('-content').sort({ createdAt: -1 });
+        
+        return res.status(200).json({
+            books: books
+        });
+    } catch(error) {
+        console.error('getAllBooks - Error:', error);
+        return res.status(500).json({
+            message: "An error occurred while fetching books",
+            error: error.message
+        });
+    }
+})
+
 export {BookOp,deleteBook};
 export {addBook};
 export {updateBook};
+export {getAllBooks};

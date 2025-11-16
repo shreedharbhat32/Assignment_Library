@@ -4,16 +4,18 @@ import bcrypt from "bcrypt";
 const registerUser = async (req, res) => {
     try{
     //obj destructre from req.body
-    const {username,fullname,email,address,phoneNumber,role,password} = req.body;
+    const {username,fullname,email,address,phoneNumber,password} = req.body;
 
-    //check for required fields
-    if(!username || !email || !role || !phoneNumber ||!fullname ||!address ||!password){
-        return res.status(401).message("All fields are required");
+    //check for required fields (role removed - defaults to regular)
+    if(!username || !email || !phoneNumber ||!fullname ||!address ||!password){
+        return res.status(401).json({
+            message: "All fields are required"
+        });
     }
 
     //user already exists?
     const existeduser = await User.findOne({
-        $or:[{username},{phoneNumber}]
+        $or:[{username: username.toLowerCase()},{phoneNumber}]
     });
     if(existeduser){
         return res.status(500).json({
@@ -24,15 +26,14 @@ const registerUser = async (req, res) => {
     //enccrypt password through bcryptjs 
     //Done in user.models.js pre save middleware
 
-
-    //save to db
+    //save to db - role defaults to "regular" in schema
     const user = await User.create({
         fullname,
         email,
         username:username.toLowerCase(),
         address,
         phoneNumber,
-        role,
+        role: "regular", // Always set to regular for new registrations
         password
     })
 
@@ -94,5 +95,71 @@ const loginuser = async(req,res) =>{
         });
     }
 }
+const getAllUsers = async(req,res)=>{
+    try {
+        // Get all users but exclude sensitive data
+        const users = await User.find({}).select('-password -refreshToken').sort({ createdAt: -1 });
+        
+        return res.status(200).json({
+            users: users
+        });
+    } catch(error) {
+        console.error('getAllUsers - Error:', error);
+        return res.status(500).json({
+            message: "An error occurred while fetching users",
+            error: error.message
+        });
+    }
+}
+
+const updateUserRole = async(req,res)=>{
+    try {
+        const {userId, role} = req.body;
+        
+        if (!userId || !role) {
+            return res.status(400).json({
+                message: "User ID and role are required"
+            });
+        }
+
+        // Validate role
+        if (role !== 'admin' && role !== 'regular') {
+            return res.status(400).json({
+                message: "Role must be either 'admin' or 'regular'"
+            });
+        }
+
+        const user = await User.findById(userId);
+        
+        if(!user){
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+
+        user.role = role.toLowerCase();
+        await user.save();
+
+        return res.status(200).json({
+            message: "User role updated successfully",
+            user: {
+                _id: user._id,
+                username: user.username,
+                fullname: user.fullname,
+                email: user.email,
+                role: user.role
+            }
+        });
+    } catch(error) {
+        console.error('updateUserRole - Error:', error);
+        return res.status(500).json({
+            message: "An error occurred while updating user role",
+            error: error.message
+        });
+    }
+}
+
 export default registerUser;
 export {loginuser};
+export {getAllUsers};
+export {updateUserRole};

@@ -192,3 +192,22 @@ export const deleteBook = async (title, bookId) => {
   });
 };
 
+export const getAllBooks = async () => {
+  return apiRequest('/library-main/get-all-books', {
+    method: 'GET',
+  });
+};
+
+export const getAllUsers = async () => {
+  return apiRequest('/users/get-all-users', {
+    method: 'GET',
+  });
+};
+
+export const updateUserRole = async (userId, role) => {
+  return apiRequest('/users/update-role', {
+    method: 'PUT',
+    body: JSON.stringify({ userId, role }),
+  });
+};
+

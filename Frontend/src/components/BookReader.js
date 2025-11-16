@@ -1,25 +1,42 @@
-import React, { useState } from 'react';
-import { readBook } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { readBook, getAllBooks } from '../services/api';
 
 const BookReader = () => {
   const [bookId, setBookId] = useState('');
   const [book, setBook] = useState(null);
+  const [books, setBooks] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingBooks, setLoadingBooks] = useState(false);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!bookId.trim()) {
-      setError('Please enter a book ID');
-      return;
+  // Fetch all books on component mount
+  useEffect(() => {
+    fetchBooks();
+  }, []);
+
+  const fetchBooks = async () => {
+    setLoadingBooks(true);
+    try {
+      const response = await getAllBooks();
+      if (response && response.books) {
+        setBooks(response.books);
+      }
+    } catch (err) {
+      console.error('Error fetching books:', err);
+      // Don't show error to user, just log it
+    } finally {
+      setLoadingBooks(false);
     }
+  };
 
+  const handleBookClick = async (selectedBookId) => {
+    setBookId(selectedBookId);
     setError('');
     setBook(null);
     setLoading(true);
 
     try {
-      const response = await readBook(bookId.trim());
+      const response = await readBook(selectedBookId);
       console.log('BookReader - Response:', response);
       
       // Backend returns { isBook: { title, author, section, edition, content, bookId, ... } }
@@ -40,29 +57,90 @@ const BookReader = () => {
     }
   };
 
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!bookId.trim()) {
+      setError('Please enter a book ID');
+      return;
+    }
+
+    await handleBookClick(bookId.trim());
+  };
+
   return (
     <div style={containerStyle}>
       <h2 style={titleStyle}>Read Book</h2>
-      <form onSubmit={handleSearch} style={formStyle}>
-        <div style={inputGroupStyle}>
-          <label style={labelStyle}>Book ID:</label>
-          <div style={searchContainerStyle}>
-            <input
-              type="text"
-              value={bookId}
-              onChange={(e) => setBookId(e.target.value)}
-              placeholder="Enter book ID"
-              style={inputStyle}
-            />
-            <button type="submit" disabled={loading} style={buttonStyle}>
-              {loading ? 'Searching...' : 'Search'}
-            </button>
+      
+      {/* Books List Section */}
+      <div style={booksListSectionStyle}>
+        <h3 style={sectionTitleStyle}>Available Books</h3>
+        {loadingBooks ? (
+          <div style={loadingStyle}>Loading books...</div>
+        ) : books.length > 0 ? (
+          <div style={booksListStyle}>
+            {books.map((bookItem) => (
+              <div
+                key={bookItem._id || bookItem.bookId}
+                style={{
+                  ...bookListItemCardStyle,
+                  ...(book && book.bookId === bookItem.bookId ? selectedBookCardStyle : {}),
+                  cursor: 'pointer',
+                }}
+                onClick={() => handleBookClick(bookItem.bookId)}
+              >
+                <div style={bookListItemHeaderStyle}>
+                  <h4 style={bookListItemTitleStyle}>{bookItem.title}</h4>
+                  <span style={bookIdBadgeStyle}>ID: {bookItem.bookId}</span>
+                </div>
+                <div style={bookListItemMetaStyle}>
+                  <div style={bookListItemMetaRowStyle}>
+                    <span style={bookListItemMetaLabelStyle}>Author:</span>
+                    <span style={bookListItemMetaValueStyle}>{bookItem.author}</span>
+                  </div>
+                  <div style={bookListItemMetaRowStyle}>
+                    <span style={bookListItemMetaLabelStyle}>Section:</span>
+                    <span style={bookListItemMetaValueStyle}>{bookItem.section || 'General'}</span>
+                  </div>
+                  {bookItem.edition && (
+                    <div style={bookListItemMetaRowStyle}>
+                      <span style={bookListItemMetaLabelStyle}>Edition:</span>
+                      <span style={bookListItemMetaValueStyle}>{bookItem.edition}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      </form>
+        ) : (
+          <div style={emptyStateStyle}>No books available. Please add books to get started.</div>
+        )}
+      </div>
+
+      {/* Search Section */}
+      <div style={searchSectionStyle}>
+        <h3 style={sectionTitleStyle}>Search by Book ID</h3>
+        <form onSubmit={handleSearch} style={formStyle}>
+          <div style={inputGroupStyle}>
+            <label style={labelStyle}>Book ID:</label>
+            <div style={searchContainerStyle}>
+              <input
+                type="text"
+                value={bookId}
+                onChange={(e) => setBookId(e.target.value)}
+                placeholder="Enter book ID"
+                style={inputStyle}
+              />
+              <button type="submit" disabled={loading} style={buttonStyle}>
+                {loading ? 'Searching...' : 'Search'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
 
       {error && <div style={errorStyle}>{error}</div>}
 
+      {/* Selected Book Display */}
       {book && (
         <div style={bookCardStyle}>
           <div style={bookHeaderStyle}>
@@ -224,6 +302,111 @@ const contentStyle = {
   padding: '1rem',
   backgroundColor: '#fafafa',
   borderRadius: '4px',
+  border: '1px solid #e0e0e0',
+};
+
+const booksListSectionStyle = {
+  marginBottom: '3rem',
+};
+
+const searchSectionStyle = {
+  marginBottom: '2rem',
+};
+
+const sectionTitleStyle = {
+  fontSize: '1.25rem',
+  fontWeight: '600',
+  marginBottom: '1rem',
+  color: '#333',
+};
+
+const booksListStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+  marginBottom: '1rem',
+};
+
+const bookListItemCardStyle = {
+  backgroundColor: '#ffffff',
+  borderRadius: '8px',
+  border: '1px solid #e0e0e0',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+  padding: '1.5rem',
+  transition: 'all 0.2s ease',
+  minHeight: '140px',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+};
+
+const bookListItemHeaderStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'flex-start',
+  marginBottom: '1rem',
+  gap: '1rem',
+};
+
+const bookListItemTitleStyle = {
+  margin: 0,
+  fontSize: '1.3rem',
+  fontWeight: '600',
+  color: '#333',
+  flex: 1,
+};
+
+const bookIdBadgeStyle = {
+  fontSize: '0.85rem',
+  padding: '0.4rem 0.75rem',
+  backgroundColor: '#e9ecef',
+  borderRadius: '4px',
+  color: '#666',
+  fontWeight: '500',
+  whiteSpace: 'nowrap',
+};
+
+const bookListItemMetaStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.75rem',
+};
+
+const bookListItemMetaRowStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  fontSize: '1rem',
+  gap: '0.5rem',
+};
+
+const bookListItemMetaLabelStyle = {
+  color: '#666',
+  fontWeight: '600',
+  minWidth: '80px',
+};
+
+const bookListItemMetaValueStyle = {
+  color: '#333',
+  fontWeight: '400',
+};
+
+const selectedBookCardStyle = {
+  border: '2px solid #007bff',
+  boxShadow: '0 4px 12px rgba(0, 123, 255, 0.2)',
+};
+
+const loadingStyle = {
+  padding: '2rem',
+  textAlign: 'center',
+  color: '#666',
+};
+
+const emptyStateStyle = {
+  padding: '2rem',
+  textAlign: 'center',
+  color: '#666',
+  backgroundColor: '#f8f9fa',
+  borderRadius: '8px',
   border: '1px solid #e0e0e0',
 };
 

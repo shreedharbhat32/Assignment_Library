@@ -18,7 +18,6 @@ const Register = () => {
     email: '',
     address: '',
     phoneNumber: '',
-    role: 'regular',
     password: '',
   });
   const [error, setError] = useState('');
@@ -114,19 +113,6 @@ const Register = () => {
               required
               style={inputStyle}
             />
-          </div>
-          <div style={inputGroupStyle}>
-            <label style={labelStyle}>Role:</label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              required
-              style={inputStyle}
-            >
-              <option value="regular">Regular User</option>
-              <option value="admin">Admin (will need backend assignment)</option>
-            </select>
           </div>
           <div style={inputGroupStyle}>
             <label style={labelStyle}>Password:</label>
