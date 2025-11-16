@@ -1,8 +1,7 @@
 import { getToken, removeToken } from '../utils/auth';
 
-// Use relative URL when proxy is configured in package.json
-// This will proxy requests from React dev server (localhost:3000) to backend (localhost:5000)
-const API_BASE_URL = '/api/v1/user';
+// Use environment variable for API base URL, fallback to relative path for local development
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '/api/v1/user';
 
 // Helper function for making API requests
 const apiRequest = async (endpoint, options = {}) => {
@@ -53,7 +52,7 @@ const apiRequest = async (endpoint, options = {}) => {
   } catch (error) {
     // Handle network errors (CORS, connection issues, etc.)
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      throw new Error('Cannot connect to server. Please ensure the backend is running on http://localhost:5000 and CORS is enabled.');
+      throw new Error('Cannot connect to server. Please check your network connection and ensure the backend is running.');
     }
     // Re-throw other errors
     throw error;
@@ -101,7 +100,7 @@ export const loginUser = async (username, password) => {
   } catch (error) {
     // Handle network errors
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      throw new Error('Cannot connect to server. Please ensure the backend is running on http://localhost:5000 and CORS is enabled.');
+      throw new Error('Cannot connect to server. Please check your network connection and ensure the backend is running.');
     }
     throw error;
   }
@@ -165,7 +164,7 @@ export const readBook = async (bookId, title = '') => {
   } catch (error) {
     // Handle network errors (CORS, connection issues, etc.)
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      throw new Error('Cannot connect to server. Please ensure the backend is running on http://localhost:5000 and CORS is enabled.');
+      throw new Error('Cannot connect to server. Please check your network connection and ensure the backend is running.');
     }
     throw error;
   }
