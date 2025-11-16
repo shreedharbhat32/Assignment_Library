@@ -1,7 +1,15 @@
 import express from "express";
+import cors from "cors";
 import router from "./routes/user.routes.js";
 
 const app = express();
+
+// CORS configuration - allow requests from any origin (for deployment)
+app.use(cors({
+    origin: '*', // Allow all origins - for production, you can specify your frontend URL
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use((req, _, next) => {
     const contentType = req.headers['content-type'] || req.headers['Content-Type'] || '';
